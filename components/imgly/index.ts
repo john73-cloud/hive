@@ -123,7 +123,5 @@ export async function initAdvancedEditor(cesdk: CreativeEditorSDK) {
   // Scene Loading
   // ============================================================================
 
-  await cesdk.loadFromArchiveURL(
-    'https://cdn.img.ly/packages/imgly/plugin-marketing-asset-source-web/1.0.0/assets/templates/9-16-marketing-ad-fragrance.zip'
-  );
+  await cesdk.actions.run('scene.create');
 }

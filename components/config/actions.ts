@@ -41,6 +41,57 @@
 
 import type CreativeEditorSDK from '@cesdk/cesdk-js';
 
+type PersistResourceFn = (resource: { url: string; dataHash: string }) => Promise<string>;
+
+export interface PersistedAssetReference {
+  uri: string;
+  scheme: string;
+  transient: boolean;
+  size?: number;
+}
+
+export interface PersistedScenePayload {
+  version: 1;
+  savedAt: string;
+  scene: string;
+  assets: PersistedAssetReference[];
+}
+
+export interface SaveSceneForDatabaseOptions {
+  persistResource?: PersistResourceFn;
+  allowedResourceSchemes?: string[];
+}
+
+export interface LoadSceneFromDatabaseOptions {
+  payload: PersistedScenePayload | string;
+  waitForResources?: boolean;
+  overrideEditorConfig?: boolean;
+}
+
+function getUriScheme(uri: string): string {
+  const match = /^([a-zA-Z][a-zA-Z\d+\-.]*):/.exec(uri);
+  return match?.[1] ?? 'unknown';
+}
+
+function collectSceneAssetReferences(cesdk: CreativeEditorSDK): PersistedAssetReference[] {
+  const transientByUri = new Map(
+    cesdk.engine.editor
+      .findAllTransientResources()
+      .map((resource) => [resource.URL, resource.size] as const)
+  );
+
+  return cesdk.engine.editor.findAllMediaURIs().map((uri) => {
+    const size = transientByUri.get(uri);
+
+    return {
+      uri,
+      scheme: getUriScheme(uri),
+      transient: size !== undefined,
+      ...(size !== undefined ? { size } : {})
+    };
+  });
+}
+
 /**
  * Register actions and configure the navigation bar for the Advanced Editor.
  *
@@ -87,6 +138,75 @@ export function setupActions(cesdk: CreativeEditorSDK): void {
   cesdk.actions.register('saveScene', async () => {
     const scene = await cesdk.engine.scene.saveToString();
     await cesdk.utils.downloadFile(scene, 'text/plain;charset=UTF-8');
+  });
+  // #endregion
+
+  // #region Save Scene For Database Action
+  // Create a JSON payload for DB persistence with scene content + referenced media.
+  // Uses scene.saveToString({ onDisallowedResourceScheme }) so blob/file resources can
+  // be uploaded and replaced with persistent URLs before storing.
+  cesdk.actions.register(
+    'saveSceneForDatabase',
+    async (options: SaveSceneForDatabaseOptions = {}): Promise<PersistedScenePayload> => {
+      const persistResource = options.persistResource;
+      const scene = await cesdk.engine.scene.saveToString({
+        ...(options.allowedResourceSchemes
+          ? { allowedResourceSchemes: options.allowedResourceSchemes }
+          : {}),
+        ...(persistResource
+          ? {
+              onDisallowedResourceScheme: (url: string, dataHash: string) =>
+                persistResource({ url, dataHash })
+            }
+          : {})
+      });
+
+      return {
+        version: 1,
+        savedAt: new Date().toISOString(),
+        scene,
+        assets: collectSceneAssetReferences(cesdk)
+      };
+    }
+  );
+
+  // Convenience action for debugging and local flows: export DB payload as JSON file.
+  cesdk.actions.register(
+    'exportSceneForDatabase',
+    async (options: SaveSceneForDatabaseOptions = {}): Promise<PersistedScenePayload> => {
+      const payload = (await cesdk.actions.run(
+        'saveSceneForDatabase',
+        options
+      )) as PersistedScenePayload;
+
+      await cesdk.utils.downloadFile(
+        new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' })
+      );
+
+      return payload;
+    }
+  );
+
+  // Load a persisted DB payload (object or JSON string) back into CE.SDK.
+  cesdk.actions.register('loadSceneFromDatabase', async (options: LoadSceneFromDatabaseOptions) => {
+    const payload =
+      typeof options.payload === 'string'
+        ? (JSON.parse(options.payload) as PersistedScenePayload)
+        : options.payload;
+
+    if (!payload?.scene) {
+      throw new Error('Invalid persisted scene payload: missing scene.');
+    }
+
+    await cesdk.engine.scene.loadFromString(
+      payload.scene,
+      options.overrideEditorConfig ?? false,
+      options.waitForResources ?? true
+    );
+
+    await cesdk.actions.run('zoom.toPage', { page: 'first' });
+
+    return payload;
   });
   // #endregion
 

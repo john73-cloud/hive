@@ -1,3 +1,4 @@
+import { SubdomainAuthGuard } from "@/components/auth/guards/subdomain-guard"
 import { DomainProvider } from "@/components/domain/domain-context"
 
 type SubdomainLayoutProps = {
@@ -5,5 +6,9 @@ type SubdomainLayoutProps = {
 }
 
 export default function SubdomainLayout({ children }: SubdomainLayoutProps) {
-    return <DomainProvider>{children}</DomainProvider>
+    return (
+        <DomainProvider>
+            <SubdomainAuthGuard>{children}</SubdomainAuthGuard>
+        </DomainProvider>
+    )
 }
