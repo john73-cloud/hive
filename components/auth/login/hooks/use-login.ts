@@ -7,6 +7,33 @@ import { toast } from "sonner";
 
 import type { LoginFormValues, LoginResult } from "../types";
 
+const getHostSubdomain = () => {
+    if (typeof window === "undefined") {
+        return null;
+    }
+
+    const hostname = window.location.hostname.toLowerCase();
+
+    if (!hostname || hostname === "localhost" || hostname === "127.0.0.1") {
+        return null;
+    }
+
+    if (hostname.endsWith(".localhost")) {
+        const labels = hostname.replace(/\.localhost$/, "").split(".").filter(Boolean);
+        const candidate = labels[0];
+        return candidate && candidate !== "www" ? candidate : null;
+    }
+
+    const labels = hostname.split(".").filter(Boolean);
+
+    if (labels.length < 3) {
+        return null;
+    }
+
+    const candidate = labels[0] === "www" ? labels[1] : labels[0];
+    return candidate || null;
+};
+
 const login = async ({
     values,
     nextPath,
@@ -32,15 +59,11 @@ const login = async ({
     }
 
     if (nextPath && nextPath.startsWith("/") && !nextPath.startsWith("//")) {
-        const firstSegment = nextPath
-            .split("?")[0]
-            .split("/")
-            .filter(Boolean)[0]
-            ?.toLowerCase();
+        return { redirectPath: nextPath };
+    }
 
-        if (!firstSegment || firstSegment === userDomain) {
-            return { redirectPath: nextPath };
-        }
+    if (getHostSubdomain()) {
+        return { redirectPath: "/" };
     }
 
     return { redirectPath: `/${userDomain}` };

@@ -55,7 +55,7 @@ export async function initAdvancedEditor(cesdk: CreativeEditorSDK) {
   // Theme and Locale
   // ============================================================================
 
-  // cesdk.setTheme('dark');
+  cesdk.ui.setTheme('dark');
   // cesdk.setLocale('en');
 
   // ============================================================================
