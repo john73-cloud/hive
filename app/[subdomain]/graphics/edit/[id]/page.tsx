@@ -1,22 +1,17 @@
 "use client";
-
-import { useCallback } from "react";
-import Link from "next/link";
-import { useParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import { useQueryClient } from "@tanstack/react-query";
-import { ArrowLeft } from "lucide-react";
-
 import { useBrandsContext } from "@/components/brands/components/context";
 import { useGetBrandProject, useUpdateBrandProject } from "@/components/brands/hooks";
 import type { BrandProject } from "@/components/brands/types";
 import AdvancedEditor from "@/components/editor/editor";
 import type { PersistedScenePayload } from "@/components/imgly/config/actions";
 import type { Project } from "@/components/projects/types";
-import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 
 const Page = () => {
     const { id = "" } = useParams<{ id?: string }>();
+    const router = useRouter();
     const { selectedBrandId, isLoadingBrands } = useBrandsContext();
 
     const queryClient = useQueryClient();
@@ -54,13 +49,13 @@ const Page = () => {
         );
     }
 
-    const handleSaveProjectData = (payload: PersistedScenePayload) => {
-        updateProject.mutate(
+    const handleSaveProjectData = async (payload: PersistedScenePayload) => {
+        await updateProject.mutateAsync(
             {
                 brandId: selectedBrandId,
                 projectId,
                 values: {
-                    data: payload,
+                    data: payload as unknown as BrandProject["data"],
                 },
             },
             {
@@ -74,16 +69,20 @@ const Page = () => {
         );
     };
 
-    const handleProjectApplied = useCallback(
-        async (appliedProject: Project) => {
-            queryClient.setQueryData(
-                ["brands", selectedBrandId, "projects", appliedProject.id],
-                appliedProject as BrandProject
-            );
-            await queryClient.invalidateQueries({ queryKey: ["brands", selectedBrandId, "projects"] });
-        },
-        [queryClient, selectedBrandId]
-    );
+    const handleProjectApplied = async (appliedProject: Project) => {
+        const normalizedProject: BrandProject = {
+            id: appliedProject.id,
+            name: appliedProject.name,
+            data: appliedProject.data as unknown as BrandProject["data"],
+            history: (appliedProject.history ?? []) as unknown as BrandProject["history"],
+            brandId: selectedBrandId,
+            createdAt: appliedProject.createdAt,
+            updatedAt: appliedProject.updatedAt,
+        };
+
+        queryClient.setQueryData(["brands", selectedBrandId, "projects", appliedProject.id], normalizedProject);
+        await queryClient.invalidateQueries({ queryKey: ["brands", selectedBrandId, "projects"] });
+    };
 
     if (isPending) {
         return (
@@ -103,24 +102,11 @@ const Page = () => {
 
     return (
         <div className="relative min-h-svh bg-black">
-            <div className="pointer-events-none absolute inset-x-0 top-0 z-50 flex px-4 pt-4 sm:px-6 sm:pt-6">
-                <Button
-                    asChild
-                    size="sm"
-                    variant="secondary"
-                    className="pointer-events-auto border border-white/15 bg-black/60 text-zinc-100 backdrop-blur hover:bg-black/80"
-                >
-                    <Link href="/graphics">
-                        <ArrowLeft />
-                        Back
-                    </Link>
-                </Button>
-            </div>
-
             <AdvancedEditor
                 project={project}
                 onSaveProjectData={handleSaveProjectData}
                 onProjectApplied={handleProjectApplied}
+                onNavigateBack={() => router.push("/graphics")}
             />
         </div>
     );

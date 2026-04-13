@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
@@ -10,10 +11,13 @@ import {
     Menu,
     Palette,
     PenLine,
+    Plus,
+    Settings,
     Sparkles,
 } from "lucide-react";
 
 import { useAuth } from "@/components/auth/context/auth-context";
+import { BrandFormDialog } from "@/components/brands/dialogs";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -32,6 +36,10 @@ import { useBrandsContext } from "./context";
 
 type BrandWorkspaceSidebarProps = {
     children: React.ReactNode;
+};
+
+type SidebarContentProps = {
+    onCreateBrand: () => void;
 };
 
 const AGENT_ICONS: Record<AgentDefinition["id"], LucideIcon> = {
@@ -66,7 +74,7 @@ const getUserInitials = (name?: string | null, email?: string | null) => {
     return "U";
 };
 
-function SidebarContent() {
+function SidebarContent({ onCreateBrand }: SidebarContentProps) {
     const pathname = usePathname();
     const { user } = useAuth();
     const {
@@ -77,6 +85,7 @@ function SidebarContent() {
         setSelectedBrandId,
         agents,
     } = useBrandsContext();
+    const isSettingsActive = pathname === "/settings" || pathname.startsWith("/settings/");
 
     const userName = user?.name ?? "Agency User";
     const userEmail = user?.email ?? "No email on file";
@@ -127,8 +136,43 @@ function SidebarContent() {
                                 </DropdownMenuItem>
                             ))
                             : null}
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem onSelect={onCreateBrand}>
+                            <Plus className="size-4" />
+                            Create brand
+                        </DropdownMenuItem>
                     </DropdownMenuContent>
                 </DropdownMenu>
+
+                {selectedBrandId ? (
+                    <Button
+                        asChild
+                        type="button"
+                        variant={isSettingsActive ? "secondary" : "ghost"}
+                        className="h-auto w-full justify-start gap-3 px-3 py-2 text-left"
+                    >
+                        <Link href="/settings">
+                            <Settings className="size-4 shrink-0 text-muted-foreground" />
+                            <div className="flex min-w-0 flex-1 flex-col overflow-hidden">
+                                <span className="truncate text-sm font-medium">Brand settings</span>
+                                <span className="truncate text-xs text-muted-foreground">Manage profile and assets</span>
+                            </div>
+                        </Link>
+                    </Button>
+                ) : (
+                    <Button
+                        type="button"
+                        variant="ghost"
+                        disabled
+                        className="h-auto w-full justify-start gap-3 px-3 py-2 text-left"
+                    >
+                        <Settings className="size-4 shrink-0 text-muted-foreground" />
+                        <div className="flex min-w-0 flex-1 flex-col overflow-hidden">
+                            <span className="truncate text-sm font-medium">Brand settings</span>
+                            <span className="truncate text-xs text-muted-foreground">Select a brand first</span>
+                        </div>
+                    </Button>
+                )}
             </div>
 
             <div className="min-h-0 flex-1 overflow-y-auto p-3">
@@ -214,43 +258,74 @@ function SidebarContent() {
 }
 
 export function BrandWorkspaceSidebar({ children }: BrandWorkspaceSidebarProps) {
-    const { selectedBrand } = useBrandsContext();
+    const pathname = usePathname();
+    const { selectedBrand, setSelectedBrandId } = useBrandsContext();
+    const [isCreateBrandOpen, setIsCreateBrandOpen] = useState(false);
+    const isGraphicsEditorRoute = pathname.startsWith("/graphics/edit/");
+
+    const openCreateBrandDialog = () => {
+        setIsCreateBrandOpen(true);
+    };
 
     return (
         <div className="flex min-h-svh bg-background text-foreground">
-            <aside className="hidden w-72 shrink-0 overflow-hidden border-r lg:flex">
-                <SidebarContent />
-            </aside>
+            {!isGraphicsEditorRoute ? (
+                <aside className="hidden w-72 shrink-0 overflow-hidden border-r lg:flex">
+                    <SidebarContent
+                        onCreateBrand={openCreateBrandDialog}
+                    />
+                </aside>
+            ) : null}
 
             <div className="flex min-h-svh min-w-0 flex-1 flex-col">
-                <div className="sticky top-0 z-30 border-b bg-background px-4 py-3 lg:hidden">
-                    <div className="flex items-center justify-between">
-                        <Sheet>
-                            <SheetTrigger asChild>
-                                <Button variant="outline" size="icon-sm">
-                                    <Menu className="size-4" />
-                                </Button>
-                            </SheetTrigger>
-                            <SheetContent
-                                side="left"
-                                showCloseButton
-                                className="w-[88%] max-w-sm overflow-hidden p-0"
-                            >
-                                <SidebarContent />
-                            </SheetContent>
-                        </Sheet>
+                {!isGraphicsEditorRoute ? (
+                    <div className="sticky top-0 z-30 border-b bg-background px-4 py-3 lg:hidden">
+                        <div className="flex items-center justify-between">
+                            <Sheet>
+                                <SheetTrigger asChild>
+                                    <Button variant="outline" size="icon-sm">
+                                        <Menu className="size-4" />
+                                    </Button>
+                                </SheetTrigger>
+                                <SheetContent
+                                    side="left"
+                                    showCloseButton
+                                    className="w-[88%] max-w-sm overflow-hidden p-0"
+                                >
+                                    <SidebarContent
+                                        onCreateBrand={openCreateBrandDialog}
+                                    />
+                                </SheetContent>
+                            </Sheet>
 
-                        <div className="text-right">
-                            <p className="text-xs text-muted-foreground">Current brand</p>
-                            <p className="max-w-44 truncate text-sm font-medium">
-                                {selectedBrand?.name ?? "No brand selected"}
-                            </p>
+                            <div className="text-right">
+                                <p className="text-xs text-muted-foreground">Current brand</p>
+                                <p className="max-w-44 truncate text-sm font-medium">
+                                    {selectedBrand?.name ?? "No brand selected"}
+                                </p>
+                            </div>
+
+                            {selectedBrand ? (
+                                <Button asChild variant="outline" size="sm">
+                                    <Link href="/settings">
+                                        <Settings className="size-4" />
+                                        Settings
+                                    </Link>
+                                </Button>
+                            ) : null}
                         </div>
                     </div>
-                </div>
+                ) : null}
 
                 <div className="min-h-0 flex-1">{children}</div>
             </div>
+
+            <BrandFormDialog
+                mode="create"
+                open={isCreateBrandOpen}
+                onOpenChange={setIsCreateBrandOpen}
+                onCreated={(createdBrand: { id: number }) => setSelectedBrandId(createdBrand.id)}
+            />
         </div>
     );
 }

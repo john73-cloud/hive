@@ -26,6 +26,7 @@ type AdvancedEditorProps = {
     };
     onSaveProjectData?: (payload: PersistedScenePayload) => Promise<void> | void;
     onProjectApplied?: (project: Project) => Promise<void> | void;
+    onNavigateBack?: () => void;
 };
 
 const parsePersistedScenePayload = (rawProjectData: unknown): PersistedScenePayload | null => {
@@ -63,6 +64,7 @@ export default function AdvancedEditor({
     project,
     onSaveProjectData,
     onProjectApplied,
+    onNavigateBack,
 }: AdvancedEditorProps) {
     const initialPayload = useMemo(
         () => parsePersistedScenePayload(project?.data),
@@ -75,6 +77,7 @@ export default function AdvancedEditor({
     const initialHistoryRef = useRef(getProjectSceneHistory(project));
     const onSaveProjectDataRef = useRef(onSaveProjectData);
     const onProjectAppliedRef = useRef(onProjectApplied);
+    const onNavigateBackRef = useRef(onNavigateBack);
 
     useEffect(() => {
         onSaveProjectDataRef.current = onSaveProjectData;
@@ -83,6 +86,10 @@ export default function AdvancedEditor({
     useEffect(() => {
         onProjectAppliedRef.current = onProjectApplied;
     }, [onProjectApplied]);
+
+    useEffect(() => {
+        onNavigateBackRef.current = onNavigateBack;
+    }, [onNavigateBack]);
 
     const init = useCallback(
         async (cesdk: CreativeEditorSDK) => {
@@ -100,6 +107,27 @@ export default function AdvancedEditor({
             });
 
             await initAdvancedEditor(cesdk);
+
+            if (onNavigateBackRef.current) {
+                cesdk.ui.removeOrderComponent({ in: 'ly.img.navigation.bar', match: 'ly.img.back.navigationBar' });
+
+                cesdk.ui.insertOrderComponent(
+                    { in: 'ly.img.navigation.bar', before: 'ly.img.undoRedo.navigationBar' },
+                    {
+                        id: 'ly.img.back.navigationBar',
+                        onClick: () => {
+                            const navigateBackHandler = onNavigateBackRef.current;
+
+                            if (navigateBackHandler) {
+                                navigateBackHandler();
+                                return;
+                            }
+
+                            window.history.back();
+                        },
+                    }
+                );
+            }
 
             cesdk.actions.register('saveScene', async () => {
                 const saveHandler = onSaveProjectDataRef.current;

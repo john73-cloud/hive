@@ -6,7 +6,6 @@ import { Button } from "@/components/ui/button";
 import {
     Card,
     CardAction,
-    CardContent,
     CardDescription,
     CardFooter,
     CardHeader,
@@ -28,21 +27,7 @@ type ProjectCardProps = {
     onDelete: (project: BrandProject) => void;
 };
 
-const getDataKind = (data: BrandProject["data"]) => {
-    if (data === null) {
-        return "No scene data yet";
-    }
 
-    if (Array.isArray(data)) {
-        return `Array (${data.length})`;
-    }
-
-    if (typeof data === "object") {
-        return "JSON object";
-    }
-
-    return typeof data;
-};
 
 const formatProjectDate = (value: string) => {
     const date = new Date(value);
@@ -60,7 +45,7 @@ const formatProjectDate = (value: string) => {
 
 export function ProjectCard({ project, onOpen, onEdit, onDelete }: ProjectCardProps) {
     return (
-        <Card className="relative border border-white/10 bg-[radial-gradient(140%_100%_at_100%_0%,rgba(255,255,255,0.10),transparent_70%),linear-gradient(180deg,rgba(15,18,24,0.88),rgba(10,12,18,0.95))] text-zinc-100 ring-0">
+        <Card className="relative border border-white/10 bg-zinc-900/80 text-zinc-100 ring-0">
             <CardHeader>
                 <CardTitle className="line-clamp-1 text-base tracking-tight text-zinc-100">
                     {project.name}
@@ -98,12 +83,7 @@ export function ProjectCard({ project, onOpen, onEdit, onDelete }: ProjectCardPr
                     </DropdownMenu>
                 </CardAction>
             </CardHeader>
-            <CardContent>
-                <div className="rounded-lg border border-white/10 bg-black/25 px-3 py-2">
-                    <p className="text-[11px] uppercase tracking-[0.14em] text-zinc-500">Scene payload</p>
-                    <p className="mt-1 text-sm text-zinc-300">{getDataKind(project.data)}</p>
-                </div>
-            </CardContent>
+
             <CardFooter className="justify-between border-t border-white/10 bg-black/25">
                 <p className="text-xs text-zinc-500">Project #{project.id}</p>
                 <Button

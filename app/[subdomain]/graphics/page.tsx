@@ -56,21 +56,15 @@ function GraphicsWorkspace({ brandId, brandName }: GraphicsWorkspaceProps) {
     };
 
     return (
-        <main className="relative min-h-svh overflow-hidden bg-[linear-gradient(180deg,#090b10_0%,#05060a_100%)] text-zinc-100">
-            <div className="pointer-events-none absolute inset-x-0 top-0 h-72 bg-[radial-gradient(50rem_30rem_at_10%_-10%,rgba(148,163,184,0.24),transparent)]" />
-            <div className="pointer-events-none absolute inset-x-0 top-0 h-56 bg-[radial-gradient(45rem_24rem_at_100%_0%,rgba(255,255,255,0.12),transparent)]" />
-
-            <section className="relative mx-auto flex w-full max-w-7xl flex-col gap-10 px-5 py-8 sm:px-8 sm:py-10 lg:px-12 lg:py-14">
+        <main className="min-h-svh bg-workspace-canvas text-zinc-100">
+            <section className="mx-auto flex w-full max-w-7xl flex-col gap-10 px-5 py-8 sm:px-8 sm:py-10 lg:px-12 lg:py-14">
                 <header className="flex flex-wrap items-end justify-between gap-4 border-b border-white/10 pb-6">
                     <div>
                         <p className="text-xs uppercase tracking-[0.18em] text-zinc-500">Graphics workspace</p>
                         <h1 className="mt-3 text-3xl leading-tight font-semibold tracking-tight text-zinc-100 sm:text-4xl">
                             {brandName}
                         </h1>
-                        <p className="mt-2 max-w-2xl text-sm text-zinc-400">
-                            Keep production files organized, iterate quickly, and reopen every design exactly where
-                            you left it.
-                        </p>
+
                     </div>
 
                     <div className="flex items-center gap-2">
@@ -92,10 +86,7 @@ function GraphicsWorkspace({ brandId, brandName }: GraphicsWorkspaceProps) {
                     </div>
                 </header>
 
-                <div className="flex items-center justify-between text-xs uppercase tracking-[0.14em] text-zinc-500">
-                    <span>{formatCountLabel(sortedProjects.length)}</span>
-                    <span>Sorted by latest update</span>
-                </div>
+
 
                 {isPending ? (
                     <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
@@ -129,29 +120,7 @@ function GraphicsWorkspace({ brandId, brandName }: GraphicsWorkspaceProps) {
                     </div>
                 ) : null}
 
-                {!isPending && !isError && sortedProjects.length === 0 ? (
-                    <div className="grid gap-4 rounded-2xl border border-white/10 bg-white/3 p-8 md:grid-cols-[1.4fr_1fr] md:items-end">
-                        <div>
-                            <p className="text-xs uppercase tracking-[0.16em] text-zinc-500">No projects yet</p>
-                            <h2 className="mt-2 text-2xl font-semibold tracking-tight text-zinc-100">
-                                Create your first canvas
-                            </h2>
-                            <p className="mt-2 max-w-lg text-sm text-zinc-400">
-                                Start with a name, jump into the editor, and each save will persist scene JSON directly
-                                to your backend project record.
-                            </p>
-                        </div>
-                        <div className="flex md:justify-end">
-                            <Button
-                                onClick={() => setIsCreateOpen(true)}
-                                className="bg-zinc-100 text-zinc-900 hover:bg-zinc-200"
-                            >
-                                <Plus />
-                                Create project
-                            </Button>
-                        </div>
-                    </div>
-                ) : null}
+
 
                 {!isPending && !isError && sortedProjects.length > 0 ? (
                     <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
@@ -167,26 +136,7 @@ function GraphicsWorkspace({ brandId, brandName }: GraphicsWorkspaceProps) {
                     </div>
                 ) : null}
 
-                {!isPending && !isError && sortedProjects.length > 0 ? (
-                    <footer className="flex items-center justify-between border-t border-white/10 pt-5 text-xs text-zinc-500">
-                        <span>Projects auto-refresh after every create, rename, and delete.</span>
-                        <Button
-                            variant="ghost"
-                            size="sm"
-                            className="text-zinc-300 hover:bg-white/10 hover:text-zinc-100"
-                            onClick={() => {
-                                const firstProjectId = sortedProjects[0]?.id;
 
-                                if (firstProjectId) {
-                                    navigateToEditor(firstProjectId);
-                                }
-                            }}
-                        >
-                            Continue latest
-                            <ArrowUpRight />
-                        </Button>
-                    </footer>
-                ) : null}
             </section>
 
             <CreateProjectDialog
@@ -224,7 +174,7 @@ export default function GraphicsPage() {
 
     if (isLoadingBrands && !selectedBrandId) {
         return (
-            <div className="flex min-h-svh items-center justify-center bg-[#06080f] text-zinc-300">
+            <div className="flex min-h-svh items-center justify-center bg-workspace-canvas text-zinc-300">
                 Loading brands...
             </div>
         );
@@ -232,7 +182,7 @@ export default function GraphicsPage() {
 
     if (!selectedBrandId) {
         return (
-            <div className="flex min-h-svh items-center justify-center bg-[#06080f] text-zinc-300">
+            <div className="flex min-h-svh items-center justify-center bg-workspace-canvas text-zinc-300">
                 No brand is available for this workspace.
             </div>
         );

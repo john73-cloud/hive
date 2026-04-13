@@ -289,9 +289,13 @@ export function setupComponents(cesdk: CreativeEditorSDK): void {
                 }
 
                 isSendingState.setValue(true);
-                statusState.setValue('Generating draft...');
+                statusState.setValue('Saving project...');
 
                 try {
+                  await cesdk.actions.run('saveScene');
+
+                  statusState.setValue('Generating draft...');
+
                   const previewProject = await previewProjectSceneEdit({
                     brandId,
                     projectId,

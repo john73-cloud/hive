@@ -184,10 +184,13 @@ const listBrandAssets = async (brandId: number) => {
     return response.data as BrandAsset[];
 };
 
-export function useListBrandAssets(brandId: number) {
+export function useListBrandAssets(brandId: number | null) {
+    const isEnabled = typeof brandId === "number" && Number.isInteger(brandId) && brandId > 0;
+
     return useQuery({
         queryKey: ["brands", brandId, "assets"],
-        queryFn: () => listBrandAssets(brandId),
+        enabled: isEnabled,
+        queryFn: () => listBrandAssets(brandId as number),
     });
 }
 

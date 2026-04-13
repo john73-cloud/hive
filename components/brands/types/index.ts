@@ -40,13 +40,13 @@ export type Brand = {
     bodyFontFamily: string | null;
     fontFallbacks: JsonValue | null;
     typographyScale: JsonValue | null;
-    logoGuidelines: JsonValue | null;
-    colorGuidelines: JsonValue | null;
-    typographyGuidelines: JsonValue | null;
-    imageryGuidelines: JsonValue | null;
-    toneGuidelines: JsonValue | null;
-    accessibilityGuidelines: JsonValue | null;
-    legalGuidelines: JsonValue | null;
+    logoGuidelines: string | null;
+    colorGuidelines: string | null;
+    typographyGuidelines: string | null;
+    imageryGuidelines: string | null;
+    toneGuidelines: string | null;
+    accessibilityGuidelines: string | null;
+    legalGuidelines: string | null;
     createdAt: string;
     updatedAt: string;
 };
@@ -54,7 +54,7 @@ export type Brand = {
 export type BrandAsset = {
     id: number;
     brandId: number;
-    role: BrandAssetRole;
+    role: BrandAssetRole | null;
     url: string;
     storageKey: string | null;
     mimeType: string | null;
@@ -98,13 +98,13 @@ export type CreateBrandValues = {
     palette?: NullableBrandJson;
     fontFallbacks?: NullableBrandJson;
     typographyScale?: NullableBrandJson;
-    logoGuidelines?: NullableBrandJson;
-    colorGuidelines?: NullableBrandJson;
-    typographyGuidelines?: NullableBrandJson;
-    imageryGuidelines?: NullableBrandJson;
-    toneGuidelines?: NullableBrandJson;
-    accessibilityGuidelines?: NullableBrandJson;
-    legalGuidelines?: NullableBrandJson;
+    logoGuidelines?: NullableBrandString;
+    colorGuidelines?: NullableBrandString;
+    typographyGuidelines?: NullableBrandString;
+    imageryGuidelines?: NullableBrandString;
+    toneGuidelines?: NullableBrandString;
+    accessibilityGuidelines?: NullableBrandString;
+    legalGuidelines?: NullableBrandString;
 };
 
 export type UpdateBrandValues = {
@@ -125,24 +125,18 @@ export type UpdateBrandValues = {
     palette?: NullableBrandJson;
     fontFallbacks?: NullableBrandJson;
     typographyScale?: NullableBrandJson;
-    logoGuidelines?: NullableBrandJson;
-    colorGuidelines?: NullableBrandJson;
-    typographyGuidelines?: NullableBrandJson;
-    imageryGuidelines?: NullableBrandJson;
-    toneGuidelines?: NullableBrandJson;
-    accessibilityGuidelines?: NullableBrandJson;
-    legalGuidelines?: NullableBrandJson;
+    logoGuidelines?: NullableBrandString;
+    colorGuidelines?: NullableBrandString;
+    typographyGuidelines?: NullableBrandString;
+    imageryGuidelines?: NullableBrandString;
+    toneGuidelines?: NullableBrandString;
+    accessibilityGuidelines?: NullableBrandString;
+    legalGuidelines?: NullableBrandString;
 };
 
 export type CreateBrandAssetValues = {
-    role: BrandAssetRole;
-    url: string;
-    storageKey?: string | null;
-    mimeType?: string | null;
-    width?: number | null;
-    height?: number | null;
-    fileSizeBytes?: number | null;
-    checksumSha256?: string | null;
+    image: string;
+    role?: BrandAssetRole;
     altText?: string | null;
 };
 
