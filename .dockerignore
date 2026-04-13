@@ -1,15 +1,15 @@
 .git
-    .github
-    .next
+.github
+.next
 node_modules
-npm - debug.log *
-    yarn - debug.log *
-    yarn - error.log *
-    pnpm - debug.log *
-    coverage
-        .env
-        .env.*
-    !.env.example
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+coverage
+.env
+.env.*
+!.env.example
 Dockerfile
-docker - compose.yml
+docker-compose.yml
 tsconfig.tsbuildinfo
