@@ -1,3 +1,4 @@
+import { Suspense } from "react"
 import { BrandsContext } from "@/components/brands/components/context"
 import { BrandWorkspaceSidebar } from "@/components/brands/components/sidebar"
 import { SubdomainAuthGuard } from "@/components/auth/guards/subdomain-guard"
@@ -10,13 +11,15 @@ type SubdomainLayoutProps = {
 export default function SubdomainLayout({ children }: SubdomainLayoutProps) {
     return (
         <DomainProvider>
-            <SubdomainAuthGuard>
-                <BrandsContext>
-                    <BrandWorkspaceSidebar>
-                        {children}
-                    </BrandWorkspaceSidebar>
-                </BrandsContext>
-            </SubdomainAuthGuard>
+            <Suspense fallback={null}>
+                <SubdomainAuthGuard>
+                    <BrandsContext>
+                        <BrandWorkspaceSidebar>
+                            {children}
+                        </BrandWorkspaceSidebar>
+                    </BrandsContext>
+                </SubdomainAuthGuard>
+            </Suspense>
         </DomainProvider>
     )
 }
