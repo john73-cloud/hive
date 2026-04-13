@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
-import { ArrowUpRight, Plus, RefreshCcw } from "lucide-react";
+import { Plus, RefreshCcw } from "lucide-react";
 
 import { useBrandsContext } from "@/components/brands/components/context";
 import { useListBrandProjects } from "@/components/brands/hooks";
@@ -20,13 +20,7 @@ const buildEditPath = (pathname: string, projectId: number) => {
     return `${basePath}/edit/${projectId}`;
 };
 
-const formatCountLabel = (count: number) => {
-    if (count === 1) {
-        return "1 project";
-    }
 
-    return `${count} projects`;
-};
 
 type GraphicsWorkspaceProps = {
     brandId: number;

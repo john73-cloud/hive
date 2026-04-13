@@ -53,6 +53,17 @@ const getSubdomainFromHost = (host: string) => {
         return candidate && candidate !== "www" ? candidate : null;
     }
 
+    const baseDomain = process.env.NEXT_PUBLIC_BASEURL?.toLowerCase();
+
+    if (baseDomain) {
+        if (hostname.endsWith(`.${baseDomain}`)) {
+            const subdomain = hostname.replace(`.${baseDomain}`, "");
+            return subdomain === "www" ? null : subdomain;
+        } else if (hostname === baseDomain) {
+            return null;
+        }
+    }
+
     const labels = hostname.split(".").filter(Boolean);
 
     if (labels.length < 3) {
