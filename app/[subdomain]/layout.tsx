@@ -1,3 +1,5 @@
+import { BrandsContext } from "@/components/brands/components/context"
+import { BrandWorkspaceSidebar } from "@/components/brands/components/sidebar"
 import { SubdomainAuthGuard } from "@/components/auth/guards/subdomain-guard"
 import { DomainProvider } from "@/components/domain/domain-context"
 
@@ -8,7 +10,13 @@ type SubdomainLayoutProps = {
 export default function SubdomainLayout({ children }: SubdomainLayoutProps) {
     return (
         <DomainProvider>
-            <SubdomainAuthGuard>{children}</SubdomainAuthGuard>
+            <SubdomainAuthGuard>
+                <BrandsContext>
+                    <BrandWorkspaceSidebar>
+                        {children}
+                    </BrandWorkspaceSidebar>
+                </BrandsContext>
+            </SubdomainAuthGuard>
         </DomainProvider>
     )
 }

@@ -3,8 +3,8 @@
 import { useForm } from "react-hook-form";
 import { Loader2 } from "lucide-react";
 
-import { useCreateProject } from "@/components/projects/hooks";
-import type { CreateProjectFormValues, Project } from "@/components/projects/types";
+import { useCreateBrandProject } from "@/components/brands/hooks";
+import type { BrandProject } from "@/components/brands/types";
 import { Button } from "@/components/ui/button";
 import {
     Dialog,
@@ -19,13 +19,19 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 
 type CreateProjectDialogProps = {
+    brandId: number;
     open: boolean;
     onOpenChange: (open: boolean) => void;
-    onCreated: (project: Project) => void;
+    onCreated: (project: BrandProject) => void;
 };
 
-export function CreateProjectDialog({ open, onOpenChange, onCreated }: CreateProjectDialogProps) {
-    const createProject = useCreateProject();
+type CreateProjectFormValues = {
+    name: string;
+    data: unknown;
+};
+
+export function CreateProjectDialog({ brandId, open, onOpenChange, onCreated }: CreateProjectDialogProps) {
+    const createProject = useCreateBrandProject();
     const {
         register,
         reset,
@@ -39,7 +45,13 @@ export function CreateProjectDialog({ open, onOpenChange, onCreated }: CreatePro
     });
 
     const onSubmit = async (values: CreateProjectFormValues) => {
-        const createdProject = await createProject.mutateAsync(values);
+        const createdProject = await createProject.mutateAsync({
+            brandId,
+            values: {
+                name: values.name,
+                data: values.data as BrandProject["data"],
+            },
+        });
         reset();
         onOpenChange(false);
         onCreated(createdProject);

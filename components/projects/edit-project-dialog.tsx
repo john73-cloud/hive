@@ -4,8 +4,8 @@ import { useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { Loader2 } from "lucide-react";
 
-import { useUpdateProject } from "@/components/projects/hooks";
-import type { Project } from "@/components/projects/types";
+import { useUpdateBrandProject } from "@/components/brands/hooks";
+import type { BrandProject } from "@/components/brands/types";
 import { Button } from "@/components/ui/button";
 import {
     Dialog,
@@ -20,7 +20,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 
 type EditProjectDialogProps = {
-    project: Project | null;
+    brandId: number;
+    project: BrandProject | null;
     open: boolean;
     onOpenChange: (open: boolean) => void;
 };
@@ -29,8 +30,8 @@ type EditProjectValues = {
     name: string;
 };
 
-export function EditProjectDialog({ project, open, onOpenChange }: EditProjectDialogProps) {
-    const updateProject = useUpdateProject();
+export function EditProjectDialog({ brandId, project, open, onOpenChange }: EditProjectDialogProps) {
+    const updateProject = useUpdateBrandProject();
     const {
         register,
         reset,
@@ -52,6 +53,7 @@ export function EditProjectDialog({ project, open, onOpenChange }: EditProjectDi
         }
 
         await updateProject.mutateAsync({
+            brandId,
             projectId: project.id,
             values: {
                 name: values.name,

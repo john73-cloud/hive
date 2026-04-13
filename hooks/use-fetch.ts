@@ -13,6 +13,7 @@ type ApiResponse<T = unknown> = {
     data?: T;
     error?: string;
     success: boolean;
+    status?: number;
 }
 
 export const requestApi = async <T = unknown>({
@@ -61,10 +62,10 @@ export const requestApi = async <T = unknown>({
                 if (!isServer) {
                     const nextPath = `${window.location.pathname}${window.location.search}`;
                     window.location.replace(`/login?next=${encodeURIComponent(nextPath)}`);
-                    return { success: false, error: "Redirecting to login" };
+                    return { success: false, error: "Redirecting to login", status: 401 };
                 }
 
-                return { success: false, error: 'Authentication required' };
+                return { success: false, error: 'Authentication required', status: 401 };
             }
         }
 
@@ -102,6 +103,7 @@ export const requestApi = async <T = unknown>({
                     success: false,
                     error: "Redirecting to login",
                     data: responseData as T,
+                    status: response.status,
                 };
             }
 
@@ -109,10 +111,11 @@ export const requestApi = async <T = unknown>({
                 success: false,
                 data: responseData as T,
                 error: errorMessage,
+                status: response.status,
             };
         }
 
-        return { data: responseData as T, success: true };
+        return { data: responseData as T, success: true, status: response.status };
     } catch (error: unknown) {
         const message = error instanceof Error ? error.message : "Unexpected request error.";
         console.error("Request API Error:", error);

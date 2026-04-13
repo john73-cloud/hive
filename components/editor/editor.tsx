@@ -1,18 +1,15 @@
 'use client';
 
-import { useCallback, useEffect, useRef } from 'react';
+import { useCallback, useEffect, useMemo, useRef } from 'react';
 
 import type CreativeEditorSDK from '@cesdk/cesdk-js';
-import { initAdvancedEditor } from '../imgly';
 import CreativeEditor from '@cesdk/cesdk-js/react';
+import { initAdvancedEditor } from '../imgly';
 
 import type { PersistedScenePayload } from '@/components/imgly/config/actions';
-import type { ProjectData } from '@/components/projects/types';
-
-type PersistResourceInput = {
-    url: string;
-    dataHash: string;
-};
+import { setSceneAiDockContext } from '@/components/imgly/config/ui/components';
+import { getProjectSceneHistory } from '@/components/projects/hooks/scene-ai';
+import type { Project } from '@/components/projects/types';
 
 const EDITOR_CONFIG = { baseURL: '/assets' } as const;
 
@@ -21,283 +18,220 @@ const RESOURCE_FETCH_TIMEOUT_MS = 30_000;
 const ALLOWED_RESOURCE_SCHEMES = ['http', 'https', 'data', 'blob', 'file'] as const;
 
 type AdvancedEditorProps = {
-    projectData?: ProjectData;
-    onSaveProjectData?: (payload: PersistedScenePayload) => Promise<void>;
+    project?: {
+        brandId?: number | null;
+        id: number;
+        data: unknown;
+        history?: unknown;
+    };
+    onSaveProjectData?: (payload: PersistedScenePayload) => Promise<void> | void;
+    onProjectApplied?: (project: Project) => Promise<void> | void;
 };
 
-const isPersistedScenePayload = (value: unknown): value is PersistedScenePayload => {
-    if (!value || typeof value !== 'object') {
-        return false;
-    }
-
-    const candidate = value as Partial<PersistedScenePayload>;
-    return typeof candidate.scene === 'string' && Array.isArray(candidate.assets);
-};
-
-const parseProjectPayload = (value: ProjectData | undefined): PersistedScenePayload | null => {
-    if (value === null || value === undefined) {
-        return null;
-    }
-
-    if (typeof value === 'string') {
+const parsePersistedScenePayload = (rawProjectData: unknown): PersistedScenePayload | null => {
+    if (typeof rawProjectData === 'string') {
         try {
-            const parsed = JSON.parse(value) as unknown;
-            return isPersistedScenePayload(parsed) ? parsed : null;
+            const parsed = JSON.parse(rawProjectData) as unknown;
+            if (
+                parsed &&
+                typeof parsed === 'object' &&
+                typeof (parsed as PersistedScenePayload).scene === 'string' &&
+                Array.isArray((parsed as PersistedScenePayload).assets)
+            ) {
+                return parsed as PersistedScenePayload;
+            }
         } catch {
             return null;
         }
+
+        return null;
     }
 
-    return isPersistedScenePayload(value) ? value : null;
+    if (
+        rawProjectData &&
+        typeof rawProjectData === 'object' &&
+        typeof (rawProjectData as PersistedScenePayload).scene === 'string' &&
+        Array.isArray((rawProjectData as PersistedScenePayload).assets)
+    ) {
+        return rawProjectData as PersistedScenePayload;
+    }
+
+    return null;
 };
 
-const blobToDataUrl = (blob: Blob): Promise<string> =>
-    new Promise((resolve, reject) => {
-        const reader = new FileReader();
+export default function AdvancedEditor({
+    project,
+    onSaveProjectData,
+    onProjectApplied,
+}: AdvancedEditorProps) {
+    const initialPayload = useMemo(
+        () => parsePersistedScenePayload(project?.data),
+        [project?.data]
+    );
 
-        reader.onload = () => {
-            if (typeof reader.result === 'string') {
-                resolve(reader.result);
-                return;
-            }
-
-            reject(new Error('Unable to serialize blob resource.'));
-        };
-
-        reader.onerror = () => reject(new Error('Failed to read blob resource.'));
-        reader.readAsDataURL(blob);
-    });
-
-const withTimeout = <T,>(promise: Promise<T>, timeoutMs: number, label: string): Promise<T> =>
-    new Promise((resolve, reject) => {
-        const timeoutHandle = setTimeout(() => {
-            reject(new Error(`${label} timed out after ${timeoutMs}ms`));
-        }, timeoutMs);
-
-        promise
-            .then((result) => {
-                clearTimeout(timeoutHandle);
-                resolve(result);
-            })
-            .catch((error) => {
-                clearTimeout(timeoutHandle);
-                reject(error);
-            });
-    });
-
-const fetchBlobWithTimeout = async (url: string, timeoutMs: number) => {
-    const controller = new AbortController();
-    const timeoutHandle = setTimeout(() => controller.abort(), timeoutMs);
-
-    try {
-        const response = await fetch(url, { signal: controller.signal });
-
-        if (!response.ok) {
-            throw new Error(`Failed to read resource ${url}.`);
-        }
-
-        return await response.blob();
-    } catch (error) {
-        if (error instanceof DOMException && error.name === 'AbortError') {
-            throw new Error(`Timed out while reading resource ${url}.`);
-        }
-
-        throw error;
-    } finally {
-        clearTimeout(timeoutHandle);
-    }
-};
-
-const applyReplacementsToScene = (scene: string, replacements: Map<string, string>) => {
-    let updatedScene = scene;
-
-    for (const [sourceUri, targetUri] of replacements.entries()) {
-        updatedScene = updatedScene.split(sourceUri).join(targetUri);
-    }
-
-    return updatedScene;
-};
-
-const shouldInlineAsset = (asset: PersistedScenePayload['assets'][number]) =>
-    asset.transient && (asset.scheme === 'blob' || asset.scheme === 'file');
-
-const getPayloadDebugMeta = (payload: PersistedScenePayload) => ({
-    sceneLength: payload.scene.length,
-    assetCount: payload.assets.length,
-    transientAssetCount: payload.assets.filter((asset) => asset.transient).length,
-    dataAssetCount: payload.assets.filter((asset) => asset.scheme === 'data').length,
-});
-
-export default function AdvancedEditor({ projectData, onSaveProjectData }: AdvancedEditorProps) {
-    const saveProjectDataRef = useRef(onSaveProjectData);
-    const hasCapturedInitialPayloadRef = useRef(false);
-    const initialPayloadRef = useRef<PersistedScenePayload | null>(null);
-
-    if (!hasCapturedInitialPayloadRef.current) {
-        initialPayloadRef.current = parseProjectPayload(projectData);
-        hasCapturedInitialPayloadRef.current = true;
-    }
+    const initialPayloadRef = useRef(initialPayload);
+    const initialBrandIdRef = useRef(project?.brandId ?? null);
+    const initialProjectIdRef = useRef(project?.id ?? null);
+    const initialHistoryRef = useRef(getProjectSceneHistory(project));
+    const onSaveProjectDataRef = useRef(onSaveProjectData);
+    const onProjectAppliedRef = useRef(onProjectApplied);
 
     useEffect(() => {
-        saveProjectDataRef.current = onSaveProjectData;
+        onSaveProjectDataRef.current = onSaveProjectData;
     }, [onSaveProjectData]);
 
     useEffect(() => {
-        console.info('[EditorLifecycle] AdvancedEditor mounted');
-
-        return () => {
-            console.info('[EditorLifecycle] AdvancedEditor unmounted');
-        };
-    }, []);
+        onProjectAppliedRef.current = onProjectApplied;
+    }, [onProjectApplied]);
 
     const init = useCallback(
         async (cesdk: CreativeEditorSDK) => {
+            setSceneAiDockContext({
+                brandId: initialBrandIdRef.current,
+                projectId: initialProjectIdRef.current,
+                initialHistory: initialHistoryRef.current,
+                onProjectApplied: async (nextProject) => {
+                    const applyHandler = onProjectAppliedRef.current;
+
+                    if (applyHandler) {
+                        await applyHandler(nextProject);
+                    }
+                },
+            });
+
             await initAdvancedEditor(cesdk);
 
-            if (saveProjectDataRef.current) {
-                cesdk.actions.register('saveScene', async () => {
-                    const saveId = `save-${Date.now()}`;
-                    const startedAt = Date.now();
-                    const replacementByUri = new Map<string, string>();
-                    const replacementByHash = new Map<string, Promise<string>>();
+            cesdk.actions.register('saveScene', async () => {
+                const saveHandler = onSaveProjectDataRef.current;
 
-                    console.groupCollapsed(`[EditorSave:${saveId}] Save started`);
+                if (!saveHandler) {
+                    return;
+                }
 
-                    try {
-                        const persistResource = async ({ url, dataHash }: PersistResourceInput) => {
-                            const cacheKey = dataHash || url;
-                            const existing = replacementByHash.get(cacheKey);
+                const saveId = `save-${Date.now()}`;
+                const startedAt = Date.now();
+                const replacementByUri = new Map<string, string>();
 
-                            if (existing) {
-                                console.debug(`[EditorSave:${saveId}] Reusing conversion cache`, {
-                                    url,
-                                    cacheKey,
-                                });
-                                return existing;
+                try {
+                    const saveScenePromise = cesdk.actions.run('saveSceneForDatabase', {
+                        allowedResourceSchemes: [...ALLOWED_RESOURCE_SCHEMES],
+                    }) as Promise<PersistedScenePayload>;
+
+                    const payload = (await Promise.race([
+                        saveScenePromise,
+                        new Promise<never>((_, reject) => {
+                            setTimeout(
+                                () => reject(new Error(`saveSceneForDatabase timed out after ${SAVE_ACTION_TIMEOUT_MS}ms`)),
+                                SAVE_ACTION_TIMEOUT_MS
+                            );
+                        }),
+                    ])) as PersistedScenePayload;
+
+                    for (const asset of payload.assets) {
+                        if (!asset.transient || (asset.scheme !== 'blob' && asset.scheme !== 'file')) {
+                            continue;
+                        }
+
+                        if (replacementByUri.has(asset.uri)) {
+                            continue;
+                        }
+
+                        const controller = new AbortController();
+                        const timeoutId = setTimeout(() => controller.abort(), RESOURCE_FETCH_TIMEOUT_MS);
+
+                        try {
+                            const response = await fetch(asset.uri, { signal: controller.signal });
+
+                            if (!response.ok) {
+                                throw new Error(`Failed to read resource ${asset.uri}.`);
                             }
 
-                            const converterPromise = (async () => {
-                                console.debug(`[EditorSave:${saveId}] Converting resource`, {
-                                    url,
-                                    cacheKey,
-                                });
+                            const blob = await response.blob();
+                            const dataUrl = await new Promise<string>((resolve, reject) => {
+                                const reader = new FileReader();
 
-                                const blob = await fetchBlobWithTimeout(url, RESOURCE_FETCH_TIMEOUT_MS);
-                                const dataUrl = await blobToDataUrl(blob);
+                                reader.onload = () => {
+                                    if (typeof reader.result === 'string') {
+                                        resolve(reader.result);
+                                        return;
+                                    }
 
-                                replacementByUri.set(url, dataUrl);
+                                    reject(new Error('Unable to serialize blob resource.'));
+                                };
 
-                                console.debug(`[EditorSave:${saveId}] Resource converted`, {
-                                    url,
-                                    byteSize: blob.size,
-                                    dataUrlLength: dataUrl.length,
-                                });
-
-                                return dataUrl;
-                            })();
-
-                            replacementByHash.set(cacheKey, converterPromise);
-                            return converterPromise;
-                        };
-
-                        console.info(`[EditorSave:${saveId}] Running saveSceneForDatabase action`, {
-                            allowedResourceSchemes: ALLOWED_RESOURCE_SCHEMES,
-                            timeoutMs: SAVE_ACTION_TIMEOUT_MS,
-                        });
-
-                        const payload = (await withTimeout(
-                            cesdk.actions.run('saveSceneForDatabase', {
-                                allowedResourceSchemes: [...ALLOWED_RESOURCE_SCHEMES],
-                            }) as Promise<PersistedScenePayload>,
-                            SAVE_ACTION_TIMEOUT_MS,
-                            'saveSceneForDatabase'
-                        )) as PersistedScenePayload;
-
-                        console.info(`[EditorSave:${saveId}] Raw payload ready`, getPayloadDebugMeta(payload));
-
-                        const fallbackAssets = payload.assets.filter(
-                            (asset) => shouldInlineAsset(asset) && !replacementByUri.has(asset.uri)
-                        );
-
-                        console.info(`[EditorSave:${saveId}] Fallback transient assets`, {
-                            count: fallbackAssets.length,
-                        });
-
-                        for (const asset of fallbackAssets) {
-                            const dataUrl = await persistResource({
-                                url: asset.uri,
-                                dataHash: asset.uri,
+                                reader.onerror = () => reject(new Error('Failed to read blob resource.'));
+                                reader.readAsDataURL(blob);
                             });
 
                             replacementByUri.set(asset.uri, dataUrl);
+                        } catch (error) {
+                            if (error instanceof DOMException && error.name === 'AbortError') {
+                                throw new Error(`Timed out while reading resource ${asset.uri}.`);
+                            }
+
+                            throw error;
+                        } finally {
+                            clearTimeout(timeoutId);
                         }
-
-                        const normalizedPayload: PersistedScenePayload = {
-                            ...payload,
-                            savedAt: new Date().toISOString(),
-                            scene: applyReplacementsToScene(payload.scene, replacementByUri),
-                            assets: payload.assets.map((asset) => {
-                                const replacementUri = replacementByUri.get(asset.uri);
-
-                                if (!replacementUri) {
-                                    return asset;
-                                }
-
-                                return {
-                                    uri: replacementUri,
-                                    scheme: 'data',
-                                    transient: false,
-                                };
-                            }),
-                        };
-
-                        console.info(
-                            `[EditorSave:${saveId}] Normalized payload ready`,
-                            getPayloadDebugMeta(normalizedPayload)
-                        );
-                        console.info(`[EditorSave:${saveId}] Sending payload to backend`);
-
-                        const saveProjectData = saveProjectDataRef.current;
-
-                        if (!saveProjectData) {
-                            throw new Error('Save handler is not available.');
-                        }
-
-                        await saveProjectData(normalizedPayload);
-
-                        console.info(`[EditorSave:${saveId}] Save finished`, {
-                            durationMs: Date.now() - startedAt,
-                        });
-                    } catch (error) {
-                        console.error(`[EditorSave:${saveId}] Save failed`, error);
-                        throw error;
-                    } finally {
-                        console.groupEnd();
                     }
-                });
-            }
 
-            const initialPayload = initialPayloadRef.current;
+                    let scene = payload.scene;
+                    for (const [sourceUri, targetUri] of replacementByUri.entries()) {
+                        scene = scene.split(sourceUri).join(targetUri);
+                    }
 
-            if (initialPayload) {
-                console.info('[EditorSave] Loading initial project payload', getPayloadDebugMeta(initialPayload));
+                    const normalizedPayload: PersistedScenePayload = {
+                        ...payload,
+                        savedAt: new Date().toISOString(),
+                        scene,
+                        assets: payload.assets.map((asset) => {
+                            const replacementUri = replacementByUri.get(asset.uri);
+
+                            if (!replacementUri) {
+                                return asset;
+                            }
+
+                            return {
+                                uri: replacementUri,
+                                scheme: 'data',
+                                transient: false,
+                            };
+                        }),
+                    };
+
+                    await saveHandler(normalizedPayload);
+
+                    console.info(`[EditorSave:${saveId}] Save finished`, {
+                        durationMs: Date.now() - startedAt,
+                    });
+                } catch (error) {
+                    console.error(`[EditorSave:${saveId}] Save failed`, error);
+                    throw error;
+                } finally {
+                    console.groupEnd();
+                }
+            });
+
+            const payloadToLoad = initialPayloadRef.current;
+
+            if (payloadToLoad) {
                 await cesdk.actions.run('loadSceneFromDatabase', {
-                    payload: initialPayload,
+                    payload: payloadToLoad,
                     waitForResources: true,
                 });
-            } else {
-                console.info('[EditorSave] No initial project payload, editor starts with a new scene');
             }
         },
         []
     );
 
     return (
-        <CreativeEditor
-            config={EDITOR_CONFIG}
-            init={init}
-            width="100vw"
-            height="100vh"
-        />
+        <div className="relative h-svh w-screen overflow-hidden">
+            <CreativeEditor
+                config={EDITOR_CONFIG}
+                init={init}
+                width="100vw"
+                height="100vh"
+            />
+        </div>
     );
 }

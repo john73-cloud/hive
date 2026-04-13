@@ -14,7 +14,9 @@ function DomainProvider({ children }: React.PropsWithChildren) {
 
 
     return (
-        <DomainContext.Provider value={{ subdomain }}>{children}</DomainContext.Provider>
+        <DomainContext.Provider value={{ subdomain }}>
+            {children}
+        </DomainContext.Provider>
     )
 }
 

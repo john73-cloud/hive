@@ -19,16 +19,16 @@ import {
     DropdownMenuSeparator,
     DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import type { Project } from "@/components/projects/types";
+import type { BrandProject } from "@/components/brands/types";
 
 type ProjectCardProps = {
-    project: Project;
-    onOpen: (project: Project) => void;
-    onEdit: (project: Project) => void;
-    onDelete: (project: Project) => void;
+    project: BrandProject;
+    onOpen: (project: BrandProject) => void;
+    onEdit: (project: BrandProject) => void;
+    onDelete: (project: BrandProject) => void;
 };
 
-const getDataKind = (data: Project["data"]) => {
+const getDataKind = (data: BrandProject["data"]) => {
     if (data === null) {
         return "No scene data yet";
     }

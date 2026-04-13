@@ -2,8 +2,8 @@
 
 import { Loader2, Trash2 } from "lucide-react";
 
-import { useDeleteProject } from "@/components/projects/hooks";
-import type { Project } from "@/components/projects/types";
+import { useDeleteBrandProject } from "@/components/brands/hooks";
+import type { BrandProject } from "@/components/brands/types";
 import { Button } from "@/components/ui/button";
 import {
     Dialog,
@@ -15,20 +15,21 @@ import {
 } from "@/components/ui/dialog";
 
 type DeleteProjectDialogProps = {
-    project: Project | null;
+    brandId: number;
+    project: BrandProject | null;
     open: boolean;
     onOpenChange: (open: boolean) => void;
 };
 
-export function DeleteProjectDialog({ project, open, onOpenChange }: DeleteProjectDialogProps) {
-    const deleteProject = useDeleteProject();
+export function DeleteProjectDialog({ brandId, project, open, onOpenChange }: DeleteProjectDialogProps) {
+    const deleteProject = useDeleteBrandProject();
 
     const onDelete = async () => {
         if (!project) {
             return;
         }
 
-        await deleteProject.mutateAsync(project.id);
+        await deleteProject.mutateAsync({ brandId, projectId: project.id });
         onOpenChange(false);
     };
 

@@ -25,6 +25,8 @@
 
 import type CreativeEditorSDK from '@cesdk/cesdk-js';
 
+import { SCENE_CHAT_DOCK_COMPONENT_ID } from './components';
+
 /**
  * Configure the dock panel layout.
  *
@@ -51,6 +53,15 @@ export function setupDock(cesdk: CreativeEditorSDK): void {
 
   // #region Dock Order
   cesdk.ui.setComponentOrder({ in: 'ly.img.dock' }, [
+    // ============================
+    // AI Scene Chat
+    // ============================
+    SCENE_CHAT_DOCK_COMPONENT_ID,
+    {
+      id: 'ly.img.separator',
+      key: 'ly.img.separator.ai'
+    },
+
     // ============================
     // Templates
     // ============================
