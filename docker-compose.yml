@@ -19,6 +19,22 @@ services:
     networks:
       - hive
       - coolify
+    labels:
+      - 'traefik.enable=true'
+      # HTTPS router
+      - 'traefik.http.routers.hive-https.rule=Host(`hive.uguru.dev`) || HostRegexp(`^.+\.hive\.uguru\.dev$`)'
+      - 'traefik.http.routers.hive-https.entryPoints=https'
+      - 'traefik.http.routers.hive-https.tls=true'
+      - 'traefik.http.routers.hive-https.tls.certresolver=letsencrypt-dns'
+      - 'traefik.http.routers.hive-https.service=hive-service'
+      - 'traefik.http.routers.hive-https.middlewares=gzip'
+      # HTTP router (redirects to HTTPS)
+      - 'traefik.http.routers.hive-http.rule=Host(`hive.uguru.dev`) || HostRegexp(`^.+\.hive\.uguru\.dev$`)'
+      - 'traefik.http.routers.hive-http.entryPoints=http'
+      - 'traefik.http.routers.hive-http.middlewares=redirect-to-https'
+      # Service — points to the container's internal port, NOT the host port
+      - 'traefik.http.services.hive-service.loadbalancer.server.port=3000'
+
 networks:
   hive:
     external: true
