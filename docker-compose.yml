@@ -15,22 +15,22 @@ services:
       - NEXTAUTH_URL=${NEXTAUTH_URL}
       - NEXTAUTH_SECRET=${NEXTAUTH_SECRET}
       - NEXT_PUBLIC_BASEURL=${NEXT_PUBLIC_BASEURL}
-      - NEXT_PUBLIC_BASEURL={NEXT_PUBLIC_BASEURL}
     networks:
       - hive
       - coolify
     labels:
       - 'traefik.enable=true'
-      # HTTPS router
-      - 'traefik.http.routers.hive-https.rule=Host(`hive.uguru.dev`) || HostRegexp(`^.+\.hive\.uguru\.dev$`)'
+      - 'traefik.docker.network=coolify'
+      - 'traefik.http.routers.hive-https.rule=Host(`hive.uguru.dev`) || HostRegexp(`^[a-z0-9]([a-z0-9-]*[a-z0-9])?\.hive\.uguru\.dev$`)'
       - 'traefik.http.routers.hive-https.entryPoints=https'
       - 'traefik.http.routers.hive-https.tls=true'
       - 'traefik.http.routers.hive-https.tls.certresolver=letsencrypt-dns'
       - 'traefik.http.routers.hive-https.service=hive-service'
-      - 'traefik.http.routers.hive-https.middlewares=gzip'
-      - 'traefik.http.routers.hive-http.rule=Host(`hive.uguru.dev`) || HostRegexp(`^.+\.hive\.uguru\.dev$`)'
+      - 'traefik.http.routers.hive-http.rule=Host(`hive.uguru.dev`) || HostRegexp(`^[a-z0-9]([a-z0-9-]*[a-z0-9])?\.hive\.uguru\.dev$`)'
       - 'traefik.http.routers.hive-http.entryPoints=http'
-      - 'traefik.http.routers.hive-http.middlewares=redirect-to-https'
+      - 'traefik.http.routers.hive-http.middlewares=hive-redirect'
+      - 'traefik.http.middlewares.hive-redirect.redirectscheme.scheme=https'
+      - 'traefik.http.middlewares.hive-redirect.redirectscheme.permanent=true'
       - 'traefik.http.services.hive-service.loadbalancer.server.port=3000'
 
 networks:
