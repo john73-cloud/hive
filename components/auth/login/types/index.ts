@@ -5,4 +5,5 @@ export type LoginFormValues = {
 
 export type LoginResult = {
     redirectPath: string;
+    domain: string | null;
 };

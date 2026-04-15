@@ -75,7 +75,6 @@ export const authOptions: NextAuthOptions = {
                         (await organizationResponse.json()) as UserOrganizationResponse;
                     domain = organizationPayload.domain.name;
                 }
-
                 return {
                     id: String(loginPayload.user.id),
                     name: loginPayload.user.name,
@@ -96,7 +95,6 @@ export const authOptions: NextAuthOptions = {
                 token.accessToken = user.token;
                 token.domain = user.domain;
             }
-
             return token;
         },
         async session({ session, token }) {
@@ -107,7 +105,6 @@ export const authOptions: NextAuthOptions = {
                 session.user.domain =
                     typeof token.domain === "string" ? token.domain : null;
             }
-
             return session;
         },
     },

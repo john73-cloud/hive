@@ -17,10 +17,14 @@ import { Field, FieldContent, FieldError, FieldLabel } from "@/components/ui/fie
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 
-import { useLogin } from "./hooks/use-login";
+import { getHostSubdomain, useLogin } from "./hooks/use-login";
 import type { LoginFormValues } from "./types";
+import { toast } from "sonner";
+import { useRouter } from "next/navigation";
+import { redirectToSubdomain } from "@/lib/utils";
 
 function LoginPage() {
+    const router = useRouter()
     const loginMutation = useLogin();
     const [passwordVisible, setPasswordVisible] = useState(false);
 
@@ -37,9 +41,21 @@ function LoginPage() {
 
     const onSubmit = async (data: LoginFormValues) => {
         try {
-            await loginMutation.mutateAsync(data);
-        } catch {
-            // Error toast is handled in useLogin.
+            await loginMutation.mutateAsync(data, {
+                onError: (error) => {
+                    toast.error(error?.message ?? "An Error Occurred")
+                },
+                onSuccess: ({ redirectPath, domain }) => {
+                    const subdomain = getHostSubdomain()
+                    if (subdomain) {
+                        router.push(redirectPath !== "/login" ? redirectPath : "")
+                    } else if (domain) {
+                        redirectToSubdomain(domain, redirectPath)
+                    }
+                }
+            });
+        } catch (error: any) {
+            toast.error(error?.message ?? "An Error Occured While Trying To Login")
         }
     };
 

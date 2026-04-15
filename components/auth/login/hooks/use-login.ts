@@ -2,12 +2,11 @@
 
 import { useMutation } from "@tanstack/react-query";
 import { getSession, signIn } from "next-auth/react";
-import { useRouter, useSearchParams } from "next/navigation";
-import { toast } from "sonner";
+import { useSearchParams } from "next/navigation";
 
 import type { LoginFormValues, LoginResult } from "../types";
 
-const getHostSubdomain = () => {
+export const getHostSubdomain = () => {
     if (typeof window === "undefined") {
         return null;
     }
@@ -53,35 +52,25 @@ const login = async ({
 
     const session = await getSession();
     const userDomain = session?.user?.domain?.toLowerCase();
-
     if (!userDomain) {
-        return { redirectPath: "/organization" };
+        return { redirectPath: "/organization", domain: null };
     }
 
     if (nextPath && nextPath.startsWith("/") && !nextPath.startsWith("//")) {
-        return { redirectPath: nextPath };
+        return { redirectPath: nextPath, domain: userDomain };
+    }
+    const subdomain = getHostSubdomain()
+    if (subdomain) {
+        return { redirectPath: "/", domain: subdomain };
     }
 
-    if (getHostSubdomain()) {
-        return { redirectPath: "/" };
-    }
 
-    return { redirectPath: `/${userDomain}` };
+    return { redirectPath: "/", domain: userDomain };
 };
 
 export function useLogin() {
-    const router = useRouter();
     const searchParams = useSearchParams();
-
     return useMutation<LoginResult, Error, LoginFormValues>({
         mutationFn: (values) => login({ values, nextPath: searchParams.get("next") }),
-        onSuccess: ({ redirectPath }) => {
-            toast.success("Login successful! Redirecting...");
-            router.replace(redirectPath);
-            router.refresh();
-        },
-        onError: (error) => {
-            toast.error(error.message || "Unable to sign in.");
-        },
     });
 }

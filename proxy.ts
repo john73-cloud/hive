@@ -98,10 +98,10 @@ export const proxy = async (request: NextRequest) => {
         secret: process.env.NEXTAUTH_SECRET,
     });
 
+
     const sessionToken = token && typeof token.accessToken === "string" ? token.accessToken : null;
     const isAuthenticated =
         typeof sessionToken === "string" && !isBackendTokenExpired(sessionToken);
-
     if (!isAuthenticated) {
         const loginUrl = nextUrl.clone();
         loginUrl.pathname = "/login";
