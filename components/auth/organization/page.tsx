@@ -24,6 +24,7 @@ import {
     useUserOrganization,
 } from "./hooks/use-organization";
 import type { CreateOrganizationFormValues } from "./types";
+import { redirectToSubdomain, slugifyBrandName } from "@/lib/utils";
 
 const sanitizeDomainInput = (value: string) =>
     value
@@ -44,6 +45,7 @@ function OrganizationPage() {
         register,
         handleSubmit,
         formState: { errors },
+        setValue
     } = useForm<CreateOrganizationFormValues>({
         defaultValues: {
             organizationName: "",
@@ -68,29 +70,19 @@ function OrganizationPage() {
             toast.success(payload.message || "Organization created successfully.");
 
             if (createdDomain) {
-                router.replace(`/${createdDomain}`);
-                router.refresh();
+                redirectToSubdomain(createdDomain, "/")
                 return;
             }
 
             if (userId) {
                 const fallbackOrganization = await fetchUserOrganization(userId);
                 const fallbackDomain = fallbackOrganization.domain.name;
-
-                if (fallbackDomain) {
-                    router.replace(`/${fallbackDomain}`);
-                    router.refresh();
-                    return;
-                }
+                redirectToSubdomain(fallbackDomain, "/")
+                return;
             }
-
             router.replace("/");
-        } catch (error: unknown) {
-            const message =
-                error instanceof Error
-                    ? error.message
-                    : "Unable to create organization.";
-            toast.error(message);
+        } catch (error: any) {
+            toast.error(error?.message ?? "Unable to create organization.");
         }
     };
 
@@ -116,6 +108,10 @@ function OrganizationPage() {
                                     {...register("organizationName", {
                                         required: "Organization name is required",
                                     })}
+                                    onChange={(e) => {
+                                        const slug = slugifyBrandName(e.target.value)
+                                        setValue("domainName", slug)
+                                    }}
                                 />
                                 <FieldError
                                     errors={[

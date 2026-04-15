@@ -35,8 +35,8 @@ export function useSignup() {
     return useMutation<SignupResponse, Error, SignupFormValues>({
         mutationFn: signup,
         onSuccess: () => {
-            toast.success("Account created successfully. Redirecting to sign in...");
-            router.replace("/login");
+            toast.success("Account created successfully.");
+            router.replace("/organization");
         },
         onError: (error) => {
             toast.error(error.message || "Unable to create account.");

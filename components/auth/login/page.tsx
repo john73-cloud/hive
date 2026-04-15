@@ -51,6 +51,8 @@ function LoginPage() {
                         router.push(redirectPath !== "/login" ? redirectPath : "")
                     } else if (domain) {
                         redirectToSubdomain(domain, redirectPath)
+                    } else {
+                        router.push(redirectPath)
                     }
                 }
             });

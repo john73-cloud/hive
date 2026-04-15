@@ -11,3 +11,15 @@ export const redirectToSubdomain = (subdomain: string, pathname: string) => {
   const protocool = location.hostname === "localhost" ? "http://" : "https://"
   window.location.replace(`${protocool}${host}${pathname}`)
 }
+
+export const slugifyBrandName = (name: string): string => {
+  const slugBase = name
+    .toLowerCase()
+    .trim()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+
+  const trimmed = slugBase.slice(0, 120).replace(/-+$/g, "");
+
+  return trimmed
+};

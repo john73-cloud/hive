@@ -88,7 +88,11 @@ export const proxy = async (request: NextRequest) => {
     if (!subdomain) {
         return NextResponse.next();
     }
-
+    if (isPublicRoute(pathname) && pathname.startsWith("/organization")) {
+        const redirectUrl = nextUrl.clone();
+        redirectUrl.pathname = "/";
+        return NextResponse.redirect(redirectUrl);
+    }
     if (isPublicRoute(pathname)) {
         return NextResponse.next();
     }
