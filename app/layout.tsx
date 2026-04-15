@@ -4,6 +4,8 @@ import "./globals.css"
 import { RootProviders } from "@/components/providers/root-providers"
 import { cn } from "@/lib/utils";
 
+export const runtime = "edge"
+
 const inter = Inter({ subsets: ['latin'], variable: '--font-sans' })
 
 const fontMono = Geist_Mono({
