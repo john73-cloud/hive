@@ -9,6 +9,7 @@ export const redirectToSubdomain = (subdomain: string, pathname: string) => {
   const baseDomain = process.env.NEXT_PUBLIC_BASEURL ?? "localhost:3000"
   const host = `${subdomain}.${baseDomain}`
   const protocool = location.hostname === "localhost" ? "http://" : "https://"
+  console.log(`${protocool}${host}${pathname}`, "test")
   window.location.replace(`${protocool}${host}${pathname}`)
 }
 

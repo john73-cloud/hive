@@ -47,11 +47,13 @@ function LoginPage() {
                 },
                 onSuccess: ({ redirectPath, domain }) => {
                     const subdomain = getHostSubdomain()
+                    console.log(domain, subdomain)
                     if (subdomain) {
                         router.push(redirectPath !== "/login" ? redirectPath : "")
                     } else if (domain) {
                         redirectToSubdomain(domain, redirectPath)
                     } else {
+                        console.log(redirectPath)
                         router.push(redirectPath)
                     }
                 }
