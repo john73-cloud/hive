@@ -15,7 +15,7 @@ const EDITOR_CONFIG = { baseURL: '/assets' } as const;
 
 const SAVE_ACTION_TIMEOUT_MS = 90_000;
 const RESOURCE_FETCH_TIMEOUT_MS = 30_000;
-const ALLOWED_RESOURCE_SCHEMES = ['http', 'https', 'data', 'blob', 'file'] as const;
+const ALLOWED_RESOURCE_SCHEMES = ['http', 'https', 'data', 'blob', 'file', 'bundle'] as const;
 
 type AdvancedEditorProps = {
     project?: {
