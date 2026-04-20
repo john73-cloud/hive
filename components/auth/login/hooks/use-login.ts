@@ -59,11 +59,6 @@ const login = async ({
     if (nextPath && nextPath.startsWith("/") && !nextPath.startsWith("//")) {
         return { redirectPath: nextPath, domain: userDomain };
     }
-    const subdomain = getHostSubdomain()
-    if (subdomain) {
-        return { redirectPath: "/", domain: subdomain };
-    }
-
 
     return { redirectPath: "/", domain: userDomain };
 };
