@@ -22,8 +22,8 @@ export const getHostSubdomain = () => {
         const candidate = labels[0];
         return candidate && candidate !== "www" ? candidate : null;
     }
-
-    const labels = hostname.split(".").filter(Boolean);
+    const baseDomain = process.env.NEXT_PUBLIC_BASEURL?.toLowerCase();
+    const labels = hostname.split(`.${baseDomain}`).filter(Boolean);
 
     if (labels.length < 3) {
         return null;
